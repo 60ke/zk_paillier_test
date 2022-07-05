@@ -58,8 +58,6 @@ fn test(hex_str1:String,hex_str2:String){
     );
     let start = std::time::Instant::now();
     let range = (&m+1)*5;
-    println!("range:{}",range);
-    println!("range1:{}",range.div_floor(&BigInt::from(3)));
     let range_proof = RangeProofNi::prove(&ek, &range, &cipher_x.0, &m, &secret_r);
     let proof_json = serde_json::to_string(&range_proof).unwrap();
     let elapsed = start.elapsed().as_secs();
