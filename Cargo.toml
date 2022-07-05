@@ -1,0 +1,27 @@
+[package]
+name = "zk_test"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rand = "0.6"
+serde = { version = "1.0", features = ["derive"] }
+rayon = "1.1"
+bit-vec = "0.6"
+sha2 = "0.9"
+digest = "0.9"
+thiserror = "1"
+zk-paillier = "*"
+serde_json="*"
+[dependencies.curv-kzen]
+version = "0.9"
+default-features = false
+# features = ["num-bigint"]
+
+
+[dependencies.paillier]
+package = "kzen-paillier"
+version = "0.4"
+default-features = false
