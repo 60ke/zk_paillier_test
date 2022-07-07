@@ -6,10 +6,10 @@ use paillier::{EncryptWithChosenRandomness, Keypair, Paillier, Randomness, RawPl
 use rayon::range;
 // use zk_paillier::zkproofs::RangeProofTrait;
 use zk_paillier::zkproofs::RangeProofNi;
+use zk_paillier::zkproofs::*;
 
 
-
-
+const STATISTICAL_ERROR_FACTOR: usize = 40;
 
 const RANGE_BITS: usize = 256; //for elliptic curves with 256bits for example
 
@@ -75,9 +75,66 @@ fn test(hex_str1:String,hex_str2:String){
 }
 
 
+
+
+fn test_range_proof_correct_proof() {
+    // common:
+    let range = BigInt::sample(RANGE_BITS);
+    // prover:
+    let (ek, _dk) = test_keypair().keys();
+    let (verifier_ek, verifier_dk) = test_keypair().keys();
+    // verifier:
+    let (com, r, e) = RangeProof::verifier_commit(&verifier_ek);
+    let (challenge, verification_aid) = CorrectKey::challenge(&verifier_ek);
+    let proof_results = CorrectKey::prove(&verifier_dk, &challenge);
+    let _result = CorrectKey::verify(&proof_results.unwrap(), &verification_aid);
+    assert!(RangeProof::verify_commit(&verifier_ek, &com, &r, &e).is_ok());
+    // prover:
+    let (encrypted_pairs, data_and_randmoness_pairs) =
+        RangeProof::generate_encrypted_pairs(&ek, &range, STATISTICAL_ERROR_FACTOR);
+    // prover:
+    let secret_r = BigInt::sample_below(&ek.n);
+    let secret_x = BigInt::sample_below(&range.div_floor(&BigInt::from(3)));
+    // common:
+    let cipher_x = Paillier::encrypt_with_chosen_randomness(
+        &ek,
+        RawPlaintext::from(&secret_x),
+        &Randomness(secret_r.clone()),
+    );
+    // verifer decommits (tested in test_commit_decommit)
+    // prover:
+    let z_vector = RangeProof::generate_proof(
+        &ek,
+        &secret_x,
+        &secret_r,
+        &e,
+        &range,
+        &data_and_randmoness_pairs,
+        STATISTICAL_ERROR_FACTOR,
+    );
+    // verifier:
+    let result = RangeProof::verifier_output(
+        &ek,
+        &e,
+        &encrypted_pairs,
+        &z_vector,
+        &range,
+        &cipher_x.0,
+        STATISTICAL_ERROR_FACTOR,
+    );
+    assert!(result.is_ok());
+}
+
+
+
+
+
+
+
+
 fn main() {
     test("10".to_string(), "10".to_string());
     test("10000000000000000000000000000000000000000000000000000000000000000".to_string(), "10000000000000000000000000000000000000000000000000000000000000000".to_string());
-    test("1000000000000000000000000000000000000000000000000000000000000000000000000000".to_string(), "1000000000000000000000000000000000000000000000000000000000000000000000000000".to_string())
-
+    test("1000000000000000000000000000000000000000000000000000000000000000000000000000".to_string(), "1000000000000000000000000000000000000000000000000000000000000000000000000000".to_string());
+    test_range_proof_correct_proof();
 }
